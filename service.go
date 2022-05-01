@@ -5,6 +5,9 @@ import (
 	calculatorPb "go-grpc-calculator-service/pb/calculator"
 	"math"
 	"net"
+	"sort"
+	"strconv"
+	"sync"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -28,79 +31,151 @@ func main() {
 
 }
 
-func (s *server) FindPrimeNumber(ctx context.Context, CalculatorRequest *calculatorPb.CalculatorRequest) (*calculatorPb.CalculatorReturn, error) {
-	n := int(CalculatorRequest.GetN())
-
-	if n <= 0 {
-		n = 1
+func IsPrime(num int64) bool {
+	if num == 2 || num == 1 {
+		return true
 	}
-
-	counter := 0
-
-	currNum := 1
-
-	for counter < n {
-		currNum++
-		isPrime := true
-		for i := 2; i <= int(math.Sqrt(float64(currNum))); i++ {
-			if currNum%i == 0 {
-				isPrime = false
-				break
-			}
-		}
-		if isPrime {
-			counter++
-		}
-	}
-
-	return &calculatorPb.CalculatorReturn{Result: int64(currNum)}, nil
-}
-
-func PrimeNumber(n int) bool {
-	if n < 2 {
+	if num%2 == 0 {
 		return false
 	}
-	for i := 2; i <= n/2; i++ {
-		if n%i == 0 {
+	lim := int64(math.Sqrt(float64(num)))
+	var i int64
+	for i = 3; i <= lim; i += 2 {
+		if num%i == 0 {
 			return false
 		}
 	}
 	return true
 }
 
-func ReverseNumber(n int) int {
-	reverse := 0
-	for {
-		reverse = (reverse * 10) + (n % 10)
-		n /= 10
-		if n == 0 {
-			break
+func IsPalindrome(num int64) bool {
+	str := strconv.FormatInt(num, 10)
+	strlen := len(str)
+	for i := 0; i < strlen/2; i++ {
+		if str[i] != str[strlen-1-i] {
+			return false
 		}
 	}
-	return reverse
+	return true
 }
 
-func PalindromeNumber(n int) bool {
-	return (n == ReverseNumber(n))
+type Int64s []int64
+
+func (is Int64s) Len() int {
+	return len(is)
+}
+func (is Int64s) Less(i, j int) bool {
+	return is[i] < is[j]
+}
+
+func (is Int64s) Swap(i, j int) {
+	is[i], is[j] = is[j], is[i]
+}
+
+func (s *server) FindPrimeNumber(ctx context.Context, CalculatorRequest *calculatorPb.CalculatorRequest) (*calculatorPb.CalculatorReturn, error) {
+	n := int(CalculatorRequest.GetN())
+	// convert n to offset
+	n -= 1
+	// goroutine stuff
+	var wg sync.WaitGroup
+	var candidates = make(chan int64)
+	var done = make(chan struct{})
+	var candidatesResults = make(chan int64)
+	var results = make([]int64, 0, n)
+	// checking workers
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for c := range candidates {
+				if IsPrime(c) {
+					candidatesResults <- c
+				}
+			}
+		}()
+	}
+	// send candidates
+	go func() {
+		// send candidates out
+		for i := int64(2); ; i++ {
+			select {
+			case _, ok := <-done:
+				if !ok {
+					close(candidates)
+					return
+				}
+			case candidates <- i:
+				continue
+			}
+		}
+	}()
+	// collect results
+	go func() {
+		for c := range candidatesResults {
+			results = append(results, c)
+			if len(results) == n+1 {
+				// we have enough, just need to make sure we got all of them
+				close(done)
+			}
+		}
+	}()
+	wg.Wait()
+	// sort array ascending
+	sort.Sort(Int64s(results))
+	// return results based on index
+	return &calculatorPb.CalculatorReturn{Result: int64(results[n])}, nil
 }
 
 func (s *server) FindPrimePalindromeNumber(ctx context.Context, CalculatorRequest *calculatorPb.CalculatorRequest) (*calculatorPb.CalculatorReturn, error) {
 	n := int(CalculatorRequest.GetN())
-
-	if n <= 0 {
-		n = 1
+	// convert n to offset
+	n -= 1
+	// goroutine stuff
+	var wg sync.WaitGroup
+	var candidates = make(chan int64)
+	var done = make(chan struct{})
+	var candidatesResults = make(chan int64)
+	var results = make([]int64, 0, n)
+	// checking workers
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for c := range candidates {
+				if IsPalindrome(c) && IsPrime(c) {
+					candidatesResults <- c
+				}
+			}
+		}()
 	}
-
-	count := 0
-
-	primePalindrome := 0
-
-	for i := 0; count < n; i++ {
-		if PrimeNumber(i) && PalindromeNumber(i) {
-			primePalindrome = i
-			count++
+	// send candidates
+	go func() {
+		// send candidates out
+		for i := int64(2); ; i++ {
+			select {
+			case _, ok := <-done:
+				if !ok {
+					close(candidates)
+					return
+				}
+			case candidates <- i:
+				continue
+			}
 		}
-	}
-
-	return &calculatorPb.CalculatorReturn{Result: int64(primePalindrome)}, nil
+	}()
+	// collect results
+	go func() {
+		for c := range candidatesResults {
+			results = append(results, c)
+			if len(results) == n+1 {
+				// we have enough, just need to make sure we got all of them
+				close(done)
+			}
+		}
+	}()
+	wg.Wait()
+	// sort array ascending
+	sort.Sort(Int64s(results))
+	// return results based on index
+	return &calculatorPb.CalculatorReturn{Result: int64(results[n])}, nil
 }
