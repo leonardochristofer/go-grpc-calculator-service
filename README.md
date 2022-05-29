@@ -1,27 +1,18 @@
-### Local command
+### Local Command
 Use the following `make` command to operate locally
-make init           # Init go module
+1. make init           # Init go module
+2. make reinit         # Re-init go module
+3. make tidy           # Tidy up go module
+4. make proto-gen      # Generate protobuf
 ```
 
 ```
-make reinit         # Re-init go module
-```
-
-```
-make tidy           # Tidy up go module
-```
-
-```
-make proto-gen      # Generate protobuf
-```
-
-```
-### Running Gateway and Service
+### Prerequisite to running Gateway and Service
 This service uses Go and gRPC, so I assume that you have Go, gRPC and protobuf generator installed.
 ```
 
 ```
-Steps:
+### Steps
 1. Make sure you are using unix or WSL 2 and have `make` installed to do the shortcut `make` command. However, if you are using windows, refer to Makefile and just copy-paste the command directly to your command prompt.
 2. Change directory to the current service, type make init, make tidy, make proto-gen.
 3. Open 2 terminals.

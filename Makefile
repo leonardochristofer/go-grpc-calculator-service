@@ -5,7 +5,7 @@ GORUN=$(GOCMD) run
 
 ENV=local
 
-GOPRIVATE=github.com/aethereal333/*
+GOPRIVATE=github.com/leonardochristofer/*
 
 SERVICE=go-grpc-calculator-service
 
