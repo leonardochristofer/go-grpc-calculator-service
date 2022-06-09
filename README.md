@@ -23,7 +23,7 @@ This service uses Go and gRPC, so I assume that you have Go, gRPC and protobuf g
 2. Change directory to the current service, init go module, tidy go module, make proto-gen.
 3. Open 2 terminals.
 4. `go run server/main.go --mode grpc` or `make run-grpc` for unix or `make runs-grpc` for windows to run server.
-5. `go run client/main.go` or `make run` for unix or `make run` for windows to run client.
+5. `go run client/main.go` or `make run` for unix or `make runs` for windows to run client.
 6. Hit API on `localhost:9100/api/prime/<index>` to find nth prime number based on index.
 Refer to https://en.wikipedia.org/wiki/List_of_prime_numbers
 7. Hit API on `localhost:9100/api/prime/palindrome/<index>` to find nth prime palindrome number based on index.
