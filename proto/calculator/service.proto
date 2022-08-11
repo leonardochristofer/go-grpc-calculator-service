@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package calculator;
+
+option go_package = "go-grpc-calculator-service/pb/calculator;calculator";
+
+import "calculator/request.proto";
+import "calculator/return.proto";
+
+service CalculatorService {
+  rpc FindPrimeNumber(CalculatorRequest) returns (CalculatorReturn);
+  rpc FindPrimePalindromeNumber(CalculatorRequest) returns (CalculatorReturn);
+}
